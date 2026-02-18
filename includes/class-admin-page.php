@@ -25,8 +25,8 @@ class GWDP_Admin_Page {
 
     public function add_menu(): void {
         add_menu_page(
-            'DP Sync',
-            'DP Sync',
+            'Give2DP',
+            'Give2DP',
             'manage_options',
             'gwdp-sync',
             [$this, 'render_page'],

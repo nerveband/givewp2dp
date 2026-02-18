@@ -54,7 +54,7 @@ This plugin uses the **DonorPerfect XML API** (stored procedures + dynamic SQL).
 
 2. Activate the plugin in WP Admin > Plugins.
 
-3. Go to **WP Admin > DP Sync > Settings** and configure:
+3. Go to **WP Admin > Give2DP > Settings** and configure:
    - Enter your DonorPerfect API key
    - Set your default GL code (e.g. `UN` for Unrestricted)
    - Set your campaign code (if applicable)
@@ -82,11 +82,11 @@ See `tests/test-dp-api.sh` for the full 34-parameter dp_savecode call.
 
 ### 1. Run the Match Report
 
-Go to **DP Sync > Match Report** and click "Generate Match Report". This checks each GiveWP donor's email against DonorPerfect to show which donors will be matched vs. created as new. No data is modified.
+Go to **Give2DP > Match Report** and click "Generate Match Report". This checks each GiveWP donor's email against DonorPerfect to show which donors will be matched vs. created as new. No data is modified.
 
 ### 2. Preview a Backfill
 
-Go to **DP Sync > Backfill** and click "Run Preview (50 donations)". This is a dry run that shows what would happen without sending anything to DonorPerfect.
+Go to **Give2DP > Backfill** and click "Run Preview (50 donations)". This is a dry run that shows what would happen without sending anything to DonorPerfect.
 
 ### 3. Run the Backfill
 
@@ -94,11 +94,11 @@ Once satisfied with the preview, click "Start Backfill" to sync historical donat
 
 ### 4. Enable Real-Time Sync
 
-Go to **DP Sync > Settings** and check "Enable automatic sync". New donations will be synced to DonorPerfect as they come in.
+Go to **Give2DP > Settings** and check "Enable automatic sync". New donations will be synced to DonorPerfect as they come in.
 
 ### 5. Monitor
 
-The **DP Sync > Dashboard** shows sync stats, and the **Sync Log** tab shows every sync attempt with status and error details.
+The **Give2DP > Dashboard** shows sync stats, and the **Sync Log** tab shows every sync attempt with status and error details.
 
 ## How it works
 
