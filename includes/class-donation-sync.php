@@ -25,6 +25,8 @@ class GWDP_Donation_Sync {
     private function __construct() {
         add_action('givewp_donation_updated', [$this, 'on_donation_updated'], 10, 1);
 
+        add_action('wp_ajax_gwdp_test_connection', [$this, 'ajax_test_connection']);
+        add_action('wp_ajax_gwdp_test_codes', [$this, 'ajax_test_codes']);
         add_action('wp_ajax_gwdp_backfill_preview', [$this, 'ajax_backfill_preview']);
         add_action('wp_ajax_gwdp_backfill_run', [$this, 'ajax_backfill_run']);
         add_action('wp_ajax_gwdp_sync_single', [$this, 'ajax_sync_single']);
@@ -452,6 +454,78 @@ class GWDP_Donation_Sync {
     }
 
     // ─── AJAX Handlers ───
+
+    public function ajax_test_connection(): void {
+        check_ajax_referer('gwdp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+        $api = $this->get_api();
+        if (!$api) wp_send_json_error('API key not configured');
+
+        // Test 1: Basic SELECT query
+        $result = $api->query("SELECT TOP 1 donor_id FROM dp WHERE donor_id > 0");
+        if (is_wp_error($result)) {
+            wp_send_json_error('API connection failed: ' . $result->get_error_message());
+        }
+
+        $donor_count = $api->query("SELECT COUNT(*) AS total FROM dp WHERE donor_id > 0");
+        $total = 0;
+        if (!is_wp_error($donor_count) && isset($donor_count->record->field)) {
+            $total = (int) $donor_count->record->field['value'];
+        }
+
+        wp_send_json_success([
+            'status'  => 'connected',
+            'message' => "API connected successfully. {$total} donors in DonorPerfect.",
+            'donors'  => $total,
+        ]);
+    }
+
+    public function ajax_test_codes(): void {
+        check_ajax_referer('gwdp_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
+
+        $api = $this->get_api();
+        if (!$api) wp_send_json_error('API key not configured');
+
+        $checks = [];
+
+        // Check GL code
+        $gl = get_option('gwdp_default_gl_code', 'UN');
+        if ($gl) {
+            $result = $api->query("SELECT code FROM DPCODES WHERE field_name='GL_CODE' AND code='{$gl}'");
+            $checks['gl_code'] = [
+                'code'  => $gl,
+                'valid' => !is_wp_error($result) && isset($result->record),
+            ];
+        }
+
+        // Check campaign
+        $campaign = get_option('gwdp_default_campaign', '');
+        if ($campaign) {
+            $result = $api->query("SELECT code FROM DPCODES WHERE field_name='CAMPAIGN' AND code='{$campaign}'");
+            $checks['campaign'] = [
+                'code'  => $campaign,
+                'valid' => !is_wp_error($result) && isset($result->record),
+            ];
+        }
+
+        // Check ONETIME sub_solicit
+        $result = $api->query("SELECT code FROM DPCODES WHERE field_name='SUB_SOLICIT_CODE' AND code='ONETIME'");
+        $checks['onetime'] = [
+            'code'  => 'ONETIME',
+            'valid' => !is_wp_error($result) && isset($result->record),
+        ];
+
+        // Check RECURRING sub_solicit
+        $result = $api->query("SELECT code FROM DPCODES WHERE field_name='SUB_SOLICIT_CODE' AND code='RECURRING'");
+        $checks['recurring'] = [
+            'code'  => 'RECURRING',
+            'valid' => !is_wp_error($result) && isset($result->record),
+        ];
+
+        wp_send_json_success($checks);
+    }
 
     public function ajax_backfill_preview(): void {
         check_ajax_referer('gwdp_admin_nonce', 'nonce');

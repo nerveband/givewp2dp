@@ -68,6 +68,7 @@ class GWDP_Admin_Page {
                 <a href="?page=gwdp-sync&tab=log" class="nav-tab <?php echo $tab === 'log' ? 'nav-tab-active' : ''; ?>">Sync Log</a>
                 <a href="?page=gwdp-sync&tab=backfill" class="nav-tab <?php echo $tab === 'backfill' ? 'nav-tab-active' : ''; ?>">Backfill</a>
                 <a href="?page=gwdp-sync&tab=match" class="nav-tab <?php echo $tab === 'match' ? 'nav-tab-active' : ''; ?>">Match Report</a>
+                <a href="?page=gwdp-sync&tab=docs" class="nav-tab <?php echo $tab === 'docs' ? 'nav-tab-active' : ''; ?>">Documentation</a>
             </nav>
 
             <div class="gwdp-tab-content">
@@ -77,6 +78,7 @@ class GWDP_Admin_Page {
                     'log'       => $this->render_log($sync),
                     'backfill'  => $this->render_backfill($sync),
                     'match'     => $this->render_match(),
+                    'docs'      => $this->render_docs(),
                     default     => $this->render_dashboard($stats),
                 };
                 ?>
@@ -197,8 +199,14 @@ class GWDP_Admin_Page {
                     <td>
                         <input type="password" name="gwdp_api_key" value="<?php echo esc_attr($api_key); ?>" class="regular-text" autocomplete="off">
                         <button type="button" class="button" id="gwdp-toggle-key">Show</button>
-                        <button type="button" class="button" id="gwdp-test-api">Test Connection</button>
-                        <span id="gwdp-api-test-result"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Connection Tests</th>
+                    <td>
+                        <button type="button" class="button" id="gwdp-test-api">Test API Connection</button>
+                        <button type="button" class="button" id="gwdp-test-codes">Validate Codes</button>
+                        <div id="gwdp-api-test-result" class="gwdp-test-results"></div>
                     </td>
                 </tr>
             </table>
@@ -358,6 +366,131 @@ class GWDP_Admin_Page {
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+        <?php
+    }
+
+    // ─── Documentation ───
+
+    private function render_docs(): void {
+        ?>
+        <div class="gwdp-docs">
+
+        <h2>How Give2DP Works</h2>
+
+        <div class="gwdp-docs-section">
+            <h3>Overview</h3>
+            <p>This plugin connects <strong>GiveWP</strong> (your WordPress donation form) to <strong>DonorPerfect</strong> (your donor management system). When someone makes a donation through GiveWP, this plugin automatically creates the corresponding donor record and gift in DonorPerfect.</p>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>One-Time Donations</h3>
+            <ol>
+                <li>A donor completes a one-time donation via your GiveWP form</li>
+                <li>The plugin searches DonorPerfect for an existing donor with the same email address</li>
+                <li>If found, it uses the existing DP donor record. If not, it creates a new one.</li>
+                <li>A gift is created in DonorPerfect with <code>sub_solicit_code = ONETIME</code></li>
+                <li>The sync is logged with the DP donor ID and gift ID</li>
+            </ol>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Recurring Donations</h3>
+            <p>Recurring donations use DonorPerfect's native <strong>pledge</strong> system:</p>
+            <ol>
+                <li><strong>First payment:</strong> Creates a DP pledge (open-ended, <code>total=0</code>) + a gift linked to that pledge</li>
+                <li><strong>Renewal payments:</strong> Creates a new gift linked to the existing pledge via <code>plink</code></li>
+            </ol>
+            <p>The plugin maps GiveWP subscription IDs to DP pledge IDs so renewals are correctly linked.</p>
+
+            <table class="widefat gwdp-docs-table">
+                <thead><tr><th>GiveWP Event</th><th>DP Action</th><th>Sub-Solicit</th></tr></thead>
+                <tbody>
+                    <tr><td>One-time donation</td><td>Create gift</td><td>ONETIME</td></tr>
+                    <tr><td>First recurring payment</td><td>Create pledge + linked gift</td><td>RECURRING</td></tr>
+                    <tr><td>Renewal payment</td><td>Create gift linked to existing pledge</td><td>RECURRING</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Donor Matching</h3>
+            <p>Donors are matched by <strong>email address</strong>. When a donation comes in, the plugin runs:</p>
+            <code>SELECT TOP 1 donor_id FROM dp WHERE email='donor@example.com'</code>
+            <p>If a match is found, the existing DP donor is used. If no match, a new donor is created via <code>dp_savedonor</code>.</p>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Settings Explained</h3>
+            <table class="widefat gwdp-docs-table">
+                <thead><tr><th>Setting</th><th>What It Does</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Real-Time Sync</strong></td><td>When ON, every new donation is automatically synced to DP. When OFF, nothing is sent — use Backfill to sync manually.</td></tr>
+                    <tr><td><strong>API Key</strong></td><td>Your DonorPerfect XML API key. Get it from DP Admin > My Settings > API Keys.</td></tr>
+                    <tr><td><strong>GL Code</strong></td><td>Default General Ledger code assigned to gifts (e.g. <code>UN</code> for Unrestricted). Must exist in DP's DPCODES table.</td></tr>
+                    <tr><td><strong>Campaign</strong></td><td>Default campaign code assigned to gifts. Must exist in DPCODES. Leave blank for none.</td></tr>
+                    <tr><td><strong>Solicit Code</strong></td><td>Optional solicit code. Sub-solicit is set automatically (ONETIME or RECURRING).</td></tr>
+                    <tr><td><strong>Gateway Mapping</strong></td><td>Maps GiveWP payment gateways to DP gift type codes. E.g. <code>stripe</code> → <code>CC</code>, <code>paypal</code> → <code>PAYPAL</code>, <code>manual</code> → <code>CK</code>.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Using the Tabs</h3>
+            <table class="widefat gwdp-docs-table">
+                <thead><tr><th>Tab</th><th>Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Dashboard</strong></td><td>Overview of sync stats (success/error counts, donors created/matched, recent activity).</td></tr>
+                    <tr><td><strong>Settings</strong></td><td>Configure API key, field mappings, gateway mappings. Test your connection and validate codes.</td></tr>
+                    <tr><td><strong>Sync Log</strong></td><td>View every sync attempt with status, DP IDs, and error messages. Filter by status.</td></tr>
+                    <tr><td><strong>Backfill</strong></td><td>Sync historical donations. Run a Preview first (dry run, no data sent), then Start Backfill. You can also sync a single donation by ID.</td></tr>
+                    <tr><td><strong>Match Report</strong></td><td>Preview how GiveWP donors will map to DP records. Read-only — no data is modified.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Recommended First Steps</h3>
+            <ol>
+                <li>Enter your API key in <strong>Settings</strong> and click <strong>Test API Connection</strong></li>
+                <li>Click <strong>Validate Codes</strong> to confirm your GL code, campaign, and sub-solicit codes exist in DP</li>
+                <li>Go to <strong>Match Report</strong> to preview how donors will be matched</li>
+                <li>Go to <strong>Backfill</strong> and run a <strong>Preview</strong> of 50 donations to see what would happen</li>
+                <li>When satisfied, run the actual <strong>Backfill</strong> to sync historical donations</li>
+                <li>Enable <strong>Real-Time Sync</strong> in Settings to start syncing new donations automatically</li>
+            </ol>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Prerequisites in DonorPerfect</h3>
+            <p>Before syncing, ensure these codes exist in your DonorPerfect system:</p>
+            <ul>
+                <li><strong>ONETIME</strong> — sub_solicit_code for one-time donations</li>
+                <li><strong>RECURRING</strong> — sub_solicit_code for recurring donations</li>
+                <li>Your <strong>GL code</strong> (e.g. <code>UN</code>) in the GL_CODE field of DPCODES</li>
+                <li>Your <strong>campaign code</strong> (if using one) in the CAMPAIGN field of DPCODES</li>
+            </ul>
+            <p>Use the <strong>Validate Codes</strong> button in Settings to check these automatically.</p>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>Database Tables</h3>
+            <p>The plugin creates two tables on activation:</p>
+            <ul>
+                <li><code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>gwdp_sync_log</code> — logs every sync attempt with Give donation ID, DP donor/gift/pledge IDs, status, and errors</li>
+                <li><code><?php echo esc_html($GLOBALS['wpdb']->prefix); ?>gwdp_pledge_map</code> — maps GiveWP subscription IDs to DP pledge IDs for linking renewal payments</li>
+            </ul>
+        </div>
+
+        <div class="gwdp-docs-section">
+            <h3>About</h3>
+            <p>
+                <strong>GiveWP to DonorPerfect Sync</strong> v<?php echo esc_html(GWDP_VERSION); ?><br>
+                By <a href="https://ashrafali.net" target="_blank">Ashraf Ali</a><br>
+                <a href="https://github.com/nerveband/givewp-donorperfect-sync" target="_blank">GitHub Repository</a> &middot; MIT License
+            </p>
+        </div>
+
         </div>
         <?php
     }

@@ -14,28 +14,69 @@
         }
     });
 
-    // ─── Test API connection ───
+    // ─── Test API Connection ───
     $('#gwdp-test-api').on('click', function() {
         var $btn = $(this);
         var $result = $('#gwdp-api-test-result');
         $btn.prop('disabled', true);
-        $result.text('Testing...').css('color', '#666');
+        $result.html('<p style="color:#666">Testing API connection...</p>');
 
         $.post(gwdp.ajax_url, {
-            action: 'gwdp_match_report',
+            action: 'gwdp_test_connection',
             nonce: gwdp.nonce
         }).done(function(response) {
             if (response.success) {
-                $result.text('Connected! Found ' + response.data.total + ' GiveWP donors.').css('color', '#46b450');
+                $result.html('<p style="color:#46b450"><strong>&#10003; Connected!</strong> ' + response.data.message + '</p>');
             } else {
-                $result.text('Error: ' + (response.data || 'Unknown error')).css('color', '#dc3232');
+                $result.html('<p style="color:#dc3232"><strong>&#10007; Failed:</strong> ' + (response.data || 'Unknown error') + '</p>');
             }
         }).fail(function() {
-            $result.text('Connection failed.').css('color', '#dc3232');
+            $result.html('<p style="color:#dc3232"><strong>&#10007;</strong> Request failed — check your server connection.</p>');
         }).always(function() {
             $btn.prop('disabled', false);
         });
     });
+
+    // ─── Validate Codes ───
+    $('#gwdp-test-codes').on('click', function() {
+        var $btn = $(this);
+        var $result = $('#gwdp-api-test-result');
+        $btn.prop('disabled', true);
+        $result.html('<p style="color:#666">Validating codes in DonorPerfect...</p>');
+
+        $.post(gwdp.ajax_url, {
+            action: 'gwdp_test_codes',
+            nonce: gwdp.nonce
+        }).done(function(response) {
+            if (response.success) {
+                var data = response.data;
+                var html = '<table class="widefat gwdp-code-results"><thead><tr><th>Code Type</th><th>Value</th><th>Status</th></tr></thead><tbody>';
+
+                if (data.gl_code) {
+                    html += codeRow('GL Code', data.gl_code.code, data.gl_code.valid);
+                }
+                if (data.campaign) {
+                    html += codeRow('Campaign', data.campaign.code, data.campaign.valid);
+                }
+                html += codeRow('Sub-Solicit: ONETIME', data.onetime.code, data.onetime.valid);
+                html += codeRow('Sub-Solicit: RECURRING', data.recurring.code, data.recurring.valid);
+
+                html += '</tbody></table>';
+                $result.html(html);
+            } else {
+                $result.html('<p style="color:#dc3232"><strong>&#10007;</strong> ' + (response.data || 'Unknown error') + '</p>');
+            }
+        }).fail(function() {
+            $result.html('<p style="color:#dc3232"><strong>&#10007;</strong> Request failed.</p>');
+        }).always(function() {
+            $btn.prop('disabled', false);
+        });
+    });
+
+    function codeRow(label, code, valid) {
+        var icon = valid ? '<span style="color:#46b450">&#10003; Found</span>' : '<span style="color:#dc3232">&#10007; Not found</span>';
+        return '<tr><td>' + label + '</td><td><code>' + code + '</code></td><td>' + icon + '</td></tr>';
+    }
 
     // ─── Gateway mapping ───
     $('#gwdp-add-gateway').on('click', function() {

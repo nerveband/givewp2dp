@@ -202,3 +202,60 @@
 .gwdp-tab-content {
     margin-top: 16px;
 }
+
+/* Test results */
+.gwdp-test-results {
+    margin-top: 10px;
+}
+.gwdp-test-results p {
+    margin: 6px 0;
+}
+.gwdp-code-results {
+    max-width: 500px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+.gwdp-code-results td,
+.gwdp-code-results th {
+    padding: 8px 12px;
+}
+
+/* Documentation */
+.gwdp-docs {
+    max-width: 800px;
+}
+.gwdp-docs-section {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+.gwdp-docs-section h3 {
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    color: #1d2327;
+}
+.gwdp-docs-section ol,
+.gwdp-docs-section ul {
+    margin-left: 20px;
+}
+.gwdp-docs-section li {
+    margin-bottom: 6px;
+    line-height: 1.6;
+}
+.gwdp-docs-section code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+.gwdp-docs-table {
+    margin-top: 12px;
+    font-size: 13px;
+}
+.gwdp-docs-table td,
+.gwdp-docs-table th {
+    padding: 8px 12px;
+}
