@@ -26,8 +26,9 @@ register_activation_hook(__FILE__, ['GWDP_Donation_Sync', 'activate']);
 
 add_action('plugins_loaded', function () {
     GWDP_Donation_Sync::instance();
+    // Updater must run outside is_admin() — WP update cron runs in frontend context
+    new GWDP_GitHub_Updater(__FILE__, 'nerveband/givewp-donorperfect-sync');
     if (is_admin()) {
         GWDP_Admin_Page::instance();
-        new GWDP_GitHub_Updater(__FILE__, 'nerveband/givewp-donorperfect-sync');
     }
 });
