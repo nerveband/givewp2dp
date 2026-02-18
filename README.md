@@ -44,23 +44,48 @@ This plugin uses the **DonorPerfect XML API** (stored procedures + dynamic SQL).
 
 ## Installation
 
+### Download (recommended)
+
+1. Go to the [Releases](https://github.com/nerveband/givewp-donorperfect-sync/releases) page
+2. Download the **Source code (zip)** from the latest release
+3. In WordPress, go to **Plugins > Add New > Upload Plugin** and upload the zip
+4. Activate the plugin
+
+The plugin includes a **built-in auto-updater** that checks this GitHub repo for new releases. When a new version is published, you'll see the standard "Update Now" button in your WordPress Plugins page — no need to manually download again.
+
 ### From source
 
-1. Clone this repo into your WordPress plugins directory:
-   ```bash
-   cd /path/to/wordpress/wp-content/plugins/
-   git clone https://github.com/yourorg/givewp-donorperfect-sync.git
-   ```
+Alternatively, clone directly into your plugins directory:
 
-2. Activate the plugin in WP Admin > Plugins.
+```bash
+cd /path/to/wordpress/wp-content/plugins/
+git clone https://github.com/nerveband/givewp-donorperfect-sync.git
+```
 
-3. Go to **WP Admin > Give2DP > Settings** and configure:
+> **Note:** If you install from git clone, the auto-updater will still work. When WordPress applies an update from GitHub releases, it will overwrite the cloned directory with the release version.
+
+### After installing
+
+1. Activate the plugin in WP Admin > Plugins
+2. Go to **WP Admin > Give2DP > Settings** and configure:
    - Enter your DonorPerfect API key
+   - Click **Test API Connection** to verify it works
    - Set your default GL code (e.g. `UN` for Unrestricted)
    - Set your campaign code (if applicable)
+   - Click **Validate Codes** to confirm your codes exist in DonorPerfect
    - Configure gateway mappings (e.g. `stripe` → `CC`, `paypal` → `PAYPAL`)
+3. Leave **Real-Time Sync OFF** until you've verified everything
+4. Check the **Documentation** tab for a full usage walkthrough
 
-4. Leave **Real-Time Sync OFF** until you've verified everything.
+### Automatic updates
+
+This plugin checks [GitHub Releases](https://github.com/nerveband/givewp-donorperfect-sync/releases) for new versions every 6 hours. When a new release is available:
+
+- You'll see an update notice on the **Plugins** page in WP Admin
+- Click **"Update Now"** to install the latest version (same as any WordPress plugin)
+- The update downloads the release zip, installs it, and reactivates the plugin automatically
+
+No external update server or license key required — updates come directly from this public repository.
 
 ### Required DonorPerfect setup
 
@@ -176,7 +201,8 @@ givewp-donorperfect-sync/
   includes/
     class-dp-api.php              # DonorPerfect XML API client
     class-donation-sync.php       # Core sync logic, hooks, backfill
-    class-admin-page.php          # WP Admin dashboard and settings
+    class-admin-page.php          # WP Admin dashboard, settings, docs
+    class-github-updater.php      # Auto-update from GitHub releases
   assets/
     admin.css                     # Admin page styles
     admin.js                      # Admin page AJAX handlers
